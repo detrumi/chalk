@@ -92,10 +92,9 @@ pub struct AssocTyDefn {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct OpaqueTyDefn {
     pub ty: Ty,
-    pub variable_kinds: Vec<VariableKind>,
+    pub trait_bounds: Vec<TraitBound>,
     pub identifier: Identifier,
     pub bounds: Vec<QuantifiedInlineBound>,
-    pub where_clauses: Vec<QuantifiedWhereClause>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]

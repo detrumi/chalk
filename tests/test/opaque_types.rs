@@ -52,10 +52,10 @@ fn opaque_where_clause() {
         program {
             struct Ty { }
 
-            trait Clone { }
+            trait Eq { }
             trait Trait { }
             impl Trait for Ty { }
-            opaque type T: Clone where T: Trait = Ty;
+            opaque type Foo<T: Eq>: Trait = Ty;
         }
 
         goal {

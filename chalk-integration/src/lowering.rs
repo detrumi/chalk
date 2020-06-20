@@ -492,11 +492,8 @@ impl LowerProgram for Program {
                 }
                 Item::OpaqueTyDefn(ref opaque_ty) => {
                     if let Some(&opaque_ty_id) = opaque_ty_ids.get(&opaque_ty.identifier.str) {
-                        let variable_kinds = opaque_ty
-                            .variable_kinds
-                            .iter()
-                            .map(|k| k.lower())
-                            .collect::<Vec<_>>();
+                        let variable_kinds =
+                            opaque_ty.trait_bounds.iter().map(|k| k.lower(&empty_env));
 
                         // Introduce the parameters declared on the opaque type definition.
                         // So if we have `type Foo<P1..Pn> = impl Trait<T1..Tn>`, this would introduce `P1..Pn`
@@ -529,7 +526,6 @@ impl LowerProgram for Program {
                                                     .intern(interner),
                                                 )
                                             })
-                                            .chain(opaque_ty.where_clauses.lower(&env)?)
                                             .collect())
                                     },
                                 )?;
@@ -812,20 +808,27 @@ impl LowerTypeKind for TraitDefn {
     }
 }
 
-impl LowerTypeKind for OpaqueTyDefn {
-    fn lower_type_kind(&self) -> LowerResult<TypeKind> {
-        let interner = &ChalkIr;
-        let binders: Vec<_> = self.variable_kinds.iter().map(|p| p.lower()).collect();
-        Ok(TypeKind {
-            sort: TypeSort::Opaque,
-            name: self.identifier.str.clone(),
-            binders: chalk_ir::Binders::new(
-                chalk_ir::VariableKinds::from(interner, binders.anonymize()),
-                crate::Unit,
-            ),
-        })
-    }
-}
+// impl LowerTypeKind for OpaqueTyDefn {
+//     fn lower_type_kind(&self) -> LowerResult<TypeKind> {
+//         let interner = &ChalkIr;
+//         // let kinds: Vec<_> = self.trait_bounds.iter().map(|b| b.trait_name).collect();
+//         let kinds = self
+//             .trait_bounds
+//             .iter()
+//             .map(|b| b.trait_name)
+//             .all_parameters()
+//             .anonymize();
+
+//         Ok(TypeKind {
+//             sort: TypeSort::Opaque,
+//             name: self.identifier.str.clone(),
+//             binders: chalk_ir::Binders::new(
+//                 chalk_ir::VariableKinds::from(interner, kinds.anonymize()),
+//                 crate::Unit,
+//             ),
+//         })
+//     }
+// }
 
 impl LowerWhereClauses for TraitDefn {
     fn where_clauses(&self) -> &[QuantifiedWhereClause] {
