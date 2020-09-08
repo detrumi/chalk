@@ -2,14 +2,16 @@ use crate::interner::ChalkIr;
 use chalk_ir::cast::Cast;
 use chalk_ir::interner::HasInterner;
 use chalk_ir::{
-    self, AdtId, BoundVar, ClosureId, DebruijnIndex, FnDefId, OpaqueTyId, TraitId, VariableKinds,
+    self, AdtId, AssocTypeId, BoundVar, ClosureId, DebruijnIndex, FnDefId, ImplId, OpaqueTyId,
+    TraitId, VariableKinds,
 };
 use chalk_parse::ast::*;
-use chalk_solve::rust_ir::AssociatedTyValueId;
-use std::collections::BTreeMap;
+use chalk_solve::rust_ir::{Anonymize, AssociatedTyValueId};
+use std::collections::{BTreeMap, HashSet};
 
+use super::{LowerParameterMap, LowerTypeKind};
 use crate::error::RustIrError;
-use crate::{Identifier as Ident, TypeKind};
+use crate::{Identifier as Ident, RawId, TypeKind};
 
 pub type AdtIds = BTreeMap<Ident, chalk_ir::AdtId<ChalkIr>>;
 pub type FnDefIds = BTreeMap<Ident, chalk_ir::FnDefId<ChalkIr>>;
@@ -78,9 +80,136 @@ pub enum ApplyTypeLookup<'k> {
     Opaque(OpaqueTyId<ChalkIr>),
 }
 
-impl Env<'_> {
+#[derive(Default)]
+pub struct ProgramLowerer {
+    pub adt_ids: AdtIds,
+    pub fn_def_ids: FnDefIds,
+    pub closure_ids: ClosureIds,
+    pub trait_ids: TraitIds,
+    pub auto_traits: AutoTraits,
+    pub opaque_ty_ids: OpaqueTyIds,
+    pub associated_ty_lookups: AssociatedTyLookups,
+    pub associated_ty_value_ids: AssociatedTyValueIds,
+    pub adt_kinds: AdtKinds,
+    pub fn_def_kinds: FnDefKinds,
+    pub closure_kinds: ClosureKinds,
+    pub trait_kinds: TraitKinds,
+    pub opaque_ty_kinds: OpaqueTyKinds,
+    pub foreign_ty_ids: ForeignIds,
+    pub object_safe_traits: HashSet<TraitId<ChalkIr>>,
+}
+
+impl ProgramLowerer {
+    pub fn gather_ids(&mut self, program: &Program) -> LowerResult<Vec<RawId>> {
+        let mut index = 0;
+        let mut next_item_id = || -> RawId {
+            let i = index;
+            index += 1;
+            RawId { index: i }
+        };
+
+        // Make a vector mapping each thing in `items` to an id,
+        // based just on its position:
+        let raw_ids: Vec<_> = program.items.iter().map(|_| next_item_id()).collect();
+
+        for (item, raw_id) in program.items.iter().zip(&raw_ids) {
+            match item {
+                Item::TraitDefn(d) => {
+                    if d.flags.auto && !d.assoc_ty_defns.is_empty() {
+                        Err(RustIrError::AutoTraitAssociatedTypes(d.name.clone()))?;
+                    }
+                    for defn in &d.assoc_ty_defns {
+                        let addl_variable_kinds = defn.all_parameters();
+                        let lookup = AssociatedTyLookup {
+                            id: AssocTypeId(next_item_id()),
+                            addl_variable_kinds: addl_variable_kinds.anonymize(),
+                        };
+                        self.associated_ty_lookups
+                            .insert((TraitId(*raw_id), defn.name.str.clone()), lookup);
+                    }
+                }
+
+                Item::Impl(d) => {
+                    for atv in &d.assoc_ty_values {
+                        let atv_id = AssociatedTyValueId(next_item_id());
+                        self.associated_ty_value_ids
+                            .insert((ImplId(*raw_id), atv.name.str.clone()), atv_id);
+                    }
+                }
+
+                _ => {}
+            }
+        }
+
+        for (item, raw_id) in program.items.iter().zip(&raw_ids) {
+            match item {
+                Item::AdtDefn(defn) => {
+                    let type_kind = defn.lower_type_kind()?;
+                    let id = AdtId(*raw_id);
+                    self.adt_ids.insert(type_kind.name.clone(), id);
+                    self.adt_kinds.insert(id, type_kind);
+                }
+                Item::FnDefn(defn) => {
+                    let type_kind = defn.lower_type_kind()?;
+                    let id = FnDefId(*raw_id);
+                    self.fn_def_ids.insert(type_kind.name.clone(), id);
+                    self.fn_def_kinds.insert(id, type_kind);
+                }
+                Item::ClosureDefn(defn) => {
+                    let type_kind = defn.lower_type_kind()?;
+                    let id = ClosureId(*raw_id);
+                    self.closure_ids.insert(defn.name.str.clone(), id);
+                    self.closure_kinds.insert(id, type_kind);
+                }
+                Item::TraitDefn(defn) => {
+                    let type_kind = defn.lower_type_kind()?;
+                    let id = TraitId(*raw_id);
+                    self.trait_ids.insert(type_kind.name.clone(), id);
+                    self.trait_kinds.insert(id, type_kind);
+                    self.auto_traits.insert(id, defn.flags.auto);
+
+                    if defn.flags.object_safe {
+                        self.object_safe_traits.insert(id);
+                    }
+                }
+                Item::OpaqueTyDefn(defn) => {
+                    let type_kind = defn.lower_type_kind()?;
+                    let id = OpaqueTyId(*raw_id);
+                    self.opaque_ty_ids.insert(defn.name.str.clone(), id);
+                    self.opaque_ty_kinds.insert(id, type_kind);
+                }
+                Item::Impl(_) => continue,
+                Item::Clause(_) => continue,
+                Item::Foreign(_) => continue,
+            };
+        }
+
+        Ok(raw_ids)
+    }
+}
+
+impl<'k> Env<'k> {
     pub fn interner(&self) -> &ChalkIr {
         &ChalkIr
+    }
+
+    pub fn from_lowerer(lowerer: &'k ProgramLowerer) -> Self {
+        Self {
+            adt_ids: &lowerer.adt_ids,
+            adt_kinds: &lowerer.adt_kinds,
+            fn_def_ids: &lowerer.fn_def_ids,
+            fn_def_kinds: &lowerer.fn_def_kinds,
+            closure_ids: &lowerer.closure_ids,
+            closure_kinds: &lowerer.closure_kinds,
+            trait_ids: &lowerer.trait_ids,
+            trait_kinds: &lowerer.trait_kinds,
+            opaque_ty_ids: &lowerer.opaque_ty_ids,
+            opaque_ty_kinds: &lowerer.opaque_ty_kinds,
+            associated_ty_lookups: &lowerer.associated_ty_lookups,
+            parameter_map: BTreeMap::new(),
+            auto_traits: &lowerer.auto_traits,
+            foreign_ty_ids: &lowerer.foreign_ty_ids,
+        }
     }
 
     pub fn lookup_generic_arg(
