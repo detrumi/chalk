@@ -470,6 +470,7 @@ where
         TI: 'i,
     {
         let interner = folder.interner();
+        let target_interner = folder.target_interner();
         match self.data(interner) {
             LifetimeData::BoundVar(bound_var) => {
                 if let Some(bound_var1) = bound_var.shifted_out_to(outer_binder) {
@@ -482,13 +483,14 @@ where
                     // This variable was bound within the binders that
                     // we folded over, so just return a bound
                     // variable.
-                    Ok(LifetimeData::<TI>::BoundVar(*bound_var).intern(folder.target_interner()))
+                    Ok(LifetimeData::<TI>::BoundVar(*bound_var).intern(target_interner))
                 }
             }
             LifetimeData::InferenceVar(var) => folder.fold_inference_lifetime(*var, outer_binder),
             LifetimeData::Placeholder(universe) => {
                 folder.fold_free_placeholder_lifetime(*universe, outer_binder)
             }
+            LifetimeData::Static => Ok(LifetimeData::<TI>::Static.intern(target_interner)),
             LifetimeData::Phantom(..) => unreachable!(),
         }
     }

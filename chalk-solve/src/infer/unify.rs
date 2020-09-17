@@ -346,6 +346,32 @@ impl<'t, I: Interner> Unifier<'t, I> {
                 a, b
             ),
 
+            (LifetimeData::Static, LifetimeData::Static) => Ok(()),
+
+            (&LifetimeData::Static, &LifetimeData::InferenceVar(var)) => {
+                self.table
+                    .unify
+                    .unify_var_value(
+                        EnaVariable::from(var),
+                        InferenceValue::from_lifetime(&self.interner, a.clone()),
+                    )
+                    .unwrap();
+                Ok(())
+            }
+            (&LifetimeData::InferenceVar(var), &LifetimeData::Static) => {
+                self.table
+                    .unify
+                    .unify_var_value(
+                        EnaVariable::from(var),
+                        InferenceValue::from_lifetime(&self.interner, b.clone()),
+                    )
+                    .unwrap();
+                Ok(())
+            }
+
+            (&LifetimeData::Placeholder(_idx), &LifetimeData::Static) => todo!(),
+            (&LifetimeData::Static, &LifetimeData::Placeholder(_idx)) => todo!(),
+
             (LifetimeData::Phantom(..), _) | (_, LifetimeData::Phantom(..)) => unreachable!(),
         }
     }

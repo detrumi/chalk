@@ -461,6 +461,8 @@ impl<'i, I: Interner> Zipper<'i, I> for AnswerSubstitutor<'i, I> {
                 answer, pending,
             ),
 
+            (LifetimeData::Static, _) | (_, LifetimeData::Static) => todo!(),
+
             (LifetimeData::Phantom(..), _) => unreachable!(),
         }
     }

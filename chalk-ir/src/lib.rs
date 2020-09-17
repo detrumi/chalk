@@ -1043,6 +1043,7 @@ impl<I: Interner> Lifetime<I> {
             LifetimeData::BoundVar(_) => true,
             LifetimeData::InferenceVar(_) => false,
             LifetimeData::Placeholder(_) => false,
+            LifetimeData::Static => false,
             LifetimeData::Phantom(..) => unreachable!(),
         }
     }
@@ -1059,6 +1060,8 @@ pub enum LifetimeData<I: Interner> {
     Placeholder(PlaceholderIndex),
     /// Lifetime on phantom data.
     Phantom(Void, PhantomData<I>),
+    /// Static lifetime
+    Static,
 }
 
 impl<I: Interner> LifetimeData<I> {

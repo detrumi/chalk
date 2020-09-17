@@ -438,6 +438,9 @@ impl<I: Interner> AntiUnifier<'_, '_, I> {
                 }
             }
 
+            (LifetimeData::Static, LifetimeData::Static) => l1.clone(),
+            (LifetimeData::Static, _) | (_, LifetimeData::Static) => self.new_lifetime_variable(),
+
             (LifetimeData::Phantom(..), _) | (_, LifetimeData::Phantom(..)) => unreachable!(),
         }
     }
