@@ -746,9 +746,7 @@ fn empty_definite_guidance() {
         }
 
         goal {
-            forall<'static> {
-                A: OtherTrait<'static>
-            }
+            A: OtherTrait<'static>
             // the program fails coherence, so which answer we get here exactly
             // isn't that important -- this is mainly a regression test for a
             // recursive solver infinite loop.
