@@ -16,6 +16,13 @@ impl<I: Interner> Debug for AdtId<I> {
     }
 }
 
+impl<I: Interner> Debug for TypeAliasId<I> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), Error> {
+        I::debug_type_alias_id(*self, fmt)
+            .unwrap_or_else(|| write!(fmt, "TypeAliasId({:?})", self.0))
+    }
+}
+
 impl<I: Interner> Debug for AssocTypeId<I> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), Error> {
         I::debug_assoc_type_id(*self, fmt)
@@ -139,6 +146,14 @@ impl<I: Interner> Debug for QuantifiedWhereClauses<I> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), Error> {
         I::debug_quantified_where_clauses(self, fmt)
             .unwrap_or_else(|| write!(fmt, "{:?}", self.interned))
+    }
+}
+
+impl<I: Interner> Debug for TypeAlias<I> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), Error> {
+        I::debug_type_alias(self, fmt).unwrap_or_else(|| {
+            unimplemented!("cannot format TypeAlias without setting Program in tls")
+        })
     }
 }
 
@@ -644,6 +659,37 @@ impl<I: Interner> ProjectionTy<I> {
     pub fn debug<'a>(&'a self, interner: &'a I) -> ProjectionTyDebug<'a, I> {
         ProjectionTyDebug {
             projection_ty: self,
+            interner,
+        }
+    }
+}
+
+/// Helper struct for showing debug output for type aliases.
+pub struct TypeAliasDebug<'a, I: Interner> {
+    type_alias: &'a TypeAlias<I>,
+    interner: &'a I,
+}
+
+impl<'a, I: Interner> Debug for TypeAliasDebug<'a, I> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), Error> {
+        let TypeAliasDebug {
+            type_alias,
+            interner,
+        } = self;
+        write!(
+            fmt,
+            "{:?}{:?}",
+            type_alias.type_alias_id,
+            type_alias.substitution.with_angle(interner)
+        )
+    }
+}
+
+impl<I: Interner> TypeAlias<I> {
+    /// Show debug output for the type alias.
+    pub fn debug<'a>(&'a self, interner: &'a I) -> TypeAliasDebug<'a, I> {
+        TypeAliasDebug {
+            type_alias: self,
             interner,
         }
     }

@@ -56,6 +56,12 @@ pub trait DebugContext {
         fmt: &mut fmt::Formatter<'_>,
     ) -> Result<(), fmt::Error>;
 
+    fn debug_type_alias(
+        &self,
+        type_alias: &TypeAlias<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error>;
+
     fn debug_projection_ty(
         &self,
         proj: &ProjectionTy<ChalkIr>,

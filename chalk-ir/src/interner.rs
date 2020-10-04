@@ -1,6 +1,4 @@
 //! Encapsulates the concrete representation of core types such as types and goals.
-use crate::AdtId;
-use crate::AliasTy;
 use crate::ApplicationTy;
 use crate::AssocTypeId;
 use crate::CanonicalVarKind;
@@ -35,6 +33,8 @@ use crate::Ty;
 use crate::TyData;
 use crate::VariableKind;
 use crate::VariableKinds;
+use crate::{AdtId, TypeAlias};
+use crate::{AliasTy, TypeAliasId};
 use crate::{Const, ConstData};
 use std::fmt::{self, Debug};
 use std::hash::Hash;
@@ -196,7 +196,7 @@ pub trait Interner: Debug + Copy + Eq + Ord + Hash {
         None
     }
 
-    /// Prints the debug representation of a type-kind-id.
+    /// Prints the debug representation of a trait id.
     /// Returns `None` to fallback to the default debug output (e.g.,
     /// if no info about current program is available from TLS).
     #[allow(unused_variables)]
@@ -207,7 +207,17 @@ pub trait Interner: Debug + Copy + Eq + Ord + Hash {
         None
     }
 
-    /// Prints the debug representation of a type-kind-id.
+    /// Prints the debug representation of a type-alias-id.
+    /// Returns `None` to fallback to the default debug output.
+    #[allow(unused_variables)]
+    fn debug_type_alias_id(
+        type_alias_id: TypeAliasId<Self>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Option<fmt::Result> {
+        None
+    }
+
+    /// Prints the debug representation of a associated-type-id.
     /// Returns `None` to fallback to the default debug output.
     #[allow(unused_variables)]
     fn debug_assoc_type_id(
@@ -276,6 +286,16 @@ pub trait Interner: Debug + Copy + Eq + Ord + Hash {
     /// if no info about current program is available from TLS).
     #[allow(unused_variables)]
     fn debug_alias(alias: &AliasTy<Self>, fmt: &mut fmt::Formatter<'_>) -> Option<fmt::Result> {
+        None
+    }
+
+    /// Prints the debug representation of a TypeAlias.
+    /// Returns `None` to fallback to the default debug output.
+    #[allow(unused_variables)]
+    fn debug_type_alias(
+        type_alias: &TypeAlias<Self>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Option<fmt::Result> {
         None
     }
 

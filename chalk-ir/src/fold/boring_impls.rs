@@ -299,6 +299,7 @@ macro_rules! id_fold {
 id_fold!(ImplId);
 id_fold!(AdtId, transfer_adt_id);
 id_fold!(TraitId);
+id_fold!(TypeAliasId);
 id_fold!(AssocTypeId);
 id_fold!(OpaqueTyId);
 id_fold!(FnDefId);

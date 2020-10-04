@@ -95,6 +95,13 @@ impl Interner for ChalkIr {
         tls::with_current_program(|prog| Some(prog?.debug_alias(alias, fmt)))
     }
 
+    fn debug_type_alias(
+        type_alias: &TypeAlias<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Option<fmt::Result> {
+        tls::with_current_program(|prog| Some(prog?.debug_type_alias(type_alias, fmt)))
+    }
+
     fn debug_projection_ty(
         proj: &ProjectionTy<ChalkIr>,
         fmt: &mut fmt::Formatter<'_>,

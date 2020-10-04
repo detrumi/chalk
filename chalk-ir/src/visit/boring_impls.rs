@@ -8,8 +8,8 @@ use crate::{
     AdtId, AssocTypeId, ClausePriority, ClosureId, Constraints, DebruijnIndex, FloatTy, FnDefId,
     ForeignDefId, GeneratorId, GenericArg, Goals, ImplId, IntTy, Interner, Mutability, OpaqueTyId,
     PlaceholderIndex, ProgramClause, ProgramClauses, QuantifiedWhereClauses, QuantifierKind,
-    Safety, Scalar, Substitution, SuperVisit, TraitId, UintTy, UniverseIndex, Visit, VisitResult,
-    Visitor,
+    Safety, Scalar, Substitution, SuperVisit, TraitId, TypeAliasId, UintTy, UniverseIndex, Visit,
+    VisitResult, Visitor,
 };
 use std::{marker::PhantomData, sync::Arc};
 
@@ -237,6 +237,7 @@ id_visit!(ImplId);
 id_visit!(AdtId);
 id_visit!(TraitId);
 id_visit!(OpaqueTyId);
+id_visit!(TypeAliasId);
 id_visit!(AssocTypeId);
 id_visit!(FnDefId);
 id_visit!(ClosureId);

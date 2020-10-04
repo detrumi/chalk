@@ -191,9 +191,18 @@ impl tls::DebugContext for Program {
         fmt: &mut fmt::Formatter<'_>,
     ) -> Result<(), fmt::Error> {
         match alias_ty {
+            AliasTy::TypeAlias(type_alias) => self.debug_type_alias(type_alias, fmt),
             AliasTy::Projection(projection_ty) => self.debug_projection_ty(projection_ty, fmt),
             AliasTy::Opaque(opaque_ty) => self.debug_opaque_ty(opaque_ty, fmt),
         }
+    }
+
+    fn debug_type_alias(
+        &self,
+        type_alias: &TypeAlias<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        todo!()
     }
 
     fn debug_projection_ty(

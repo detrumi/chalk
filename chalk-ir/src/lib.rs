@@ -353,6 +353,10 @@ pub struct ImplId<I: Interner>(pub I::DefId);
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ClauseId<I: Interner>(pub I::DefId);
 
+/// Id for a type alias.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TypeAliasId<I: Interner>(pub I::DefId);
+
 /// The id for the associated type member of a trait. The details of the type
 /// can be found by invoking the [`associated_ty_data`] method.
 ///
@@ -1376,6 +1380,8 @@ pub type CanonicalVarKind<I: Interner> = WithKind<I, UniverseIndex>;
 /// An alias, which is a trait indirection such as a projection or opaque type.
 #[derive(Clone, PartialEq, Eq, Hash, Fold, Visit, HasInterner, Zip)]
 pub enum AliasTy<I: Interner> {
+    /// A type alias.
+    TypeAlias(TypeAlias<I>),
     /// An associated type projection.
     Projection(ProjectionTy<I>),
     /// An opaque type.
@@ -1403,6 +1409,17 @@ impl<I: Interner> AliasTy<I> {
         }
     }
 }
+
+/// A type alias `type T = Foo`
+#[derive(Clone, PartialEq, Eq, Hash, Fold, Visit, HasInterner, Zip)]
+pub struct TypeAlias<I: Interner> {
+    /// The id for the type alias
+    pub type_alias_id: TypeAliasId<I>,
+    /// The substitution for the type alias.
+    pub substitution: Substitution<I>,
+}
+
+impl<I: Interner> Copy for TypeAlias<I> where I::InternedSubstitution: Copy {}
 
 /// A projection `<P0 as TraitName<P1..Pn>>::AssocItem<Pn+1..Pm>`.
 #[derive(Clone, PartialEq, Eq, Hash, Fold, Visit, HasInterner, Zip)]
